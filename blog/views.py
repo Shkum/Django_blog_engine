@@ -1,23 +1,19 @@
-from django.http import HttpResponse
-from django.shortcuts import render
 from .models import Post, Tag
-
+from django.views.generic import View
+from django.shortcuts import render, redirect
+from .utils import ObjectDetailMixin
+from .forms import TagForm
 
 def posts_list(request):
-    # return HttpResponse('<h1>Blog Page</h1>')
     posts = Post.objects.all()
     context = {
         'posts': posts
     }
     return render(request, 'blog/index.html', context)
 
-
-def post_detail(request, slug):
-    post = Post.objects.get(slug__iexact=slug)
-    context = {
-        'post': post
-    }
-    return render(request, 'blog/post_detail.html', context)
+class PostDetail(ObjectDetailMixin, View):
+    model = Post
+    template = 'blog/post_detail.html'
 
 
 def tags_list(request):
@@ -28,10 +24,22 @@ def tags_list(request):
     return render(request, 'blog/tags_list.html', context)
 
 
-def tag_detail(request, slug):
-    tag = Tag.objects.get(slug__iexact=slug)
-    context={
-        'tag': tag
-    }
-    return render(request, 'blog/tag_detail.html', context)
+class TagDetail(ObjectDetailMixin, View):
+    model = Tag
+    template = 'blog/tag_detail.html'
 
+
+class TagCreate(View):
+    def get(self, request):
+        form = TagForm()
+        context = {
+            'form': form
+        }
+        return render (request, 'blog/tag_create.html', context)
+
+    def post(self, request):
+        bound_form = TagForm(request.POST)
+        if bound_form.is_valid():
+            new_tag = bound_form.save()
+            return redirect(new_tag)
+        return render(request, 'blog/tag_create.html', context={'form': bound_form})
